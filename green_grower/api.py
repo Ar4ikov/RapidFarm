@@ -156,7 +156,7 @@ class GG_DataQueue:
                 )
 
                 value = self.root.serial.execute(command)
-
+                sleep(0.1)
                 if not value:
                     continue
 
@@ -167,11 +167,12 @@ class GG_DataQueue:
                 sensor_value.metric = sensor.metric
 
                 self.database.insert_into("data", sensor_value)
-                sleep(0.6)
+                sleep(0.1)
 
             sleep(10)
 
         data_io_thread.start()
+        # data_io_thread2.start()
 
 
 class GG_Serial:
@@ -180,8 +181,17 @@ class GG_Serial:
         self.port, self.baudrate, self.timeout = port or self.get_connection_port(), baudrate, timeout
         self.serial = Serial(self.port, baudrate=self.baudrate, timeout=self.timeout)
 
-        self.SERIAL_COMMAND_SCHEME = "{mode}|{sensor}|{sensor_id}|{value}\n"
+        self.SERIAL_COMMAND_SCHEME = "{mode}|{sensor}|{sensor_id}|{value}\r\n"
         self.SERIAL_COMMAND_REGEX = "[I|O]\\|\\w{1,}\\|\\w{1,2}\\d{1,2}\\|{0,}.{0,}"
+
+    def reopen_port(self) -> bool:
+        if self.serial:
+            if self.serial.is_open:
+                self.serial.close()
+
+        self.serial.open()
+
+        return True
 
     @staticmethod
     def get_connection_port():
@@ -192,12 +202,12 @@ class GG_Serial:
 
         for port in ports:
             try:
-                _ = Serial(port.name, 9600, timeout=1)
+                _ = Serial(port.device, 9600, timeout=1)
             except SerialException or SerialTimeoutException:
                 continue
             else:
-                print(port.name)
-                return port.name
+                print(port.device)
+                return port.device
 
         raise GG_Errors("There is no COM ports, try to reconnect Arduino and restart server", 100)
 
@@ -205,18 +215,32 @@ class GG_Serial:
         command = self.SERIAL_COMMAND_SCHEME.format(**data_json)
 
         if match(self.SERIAL_COMMAND_REGEX, command) is None:
-            raise GG_Errors("The command what we need and regex does not match.", 200)
+            raise GG_Errors(f"The command what we need and regex does not match. -> {command}", 200)
 
         return command
 
     def execute(self, command):
         # TODO: Нужен хотфикс
+        # self.reopen_port()
+        """
+        v = b''
+            t = self.serial.read(1)
+            while t != b';':
+                print(t)
+                v += t
+                t = self.serial.read(1)
+
+            value = v.decode()
+        :param command:
+        :return:
+        """
+
         if self.serial.is_open:
             self.serial.write(command.encode())
-
+            sleep(0.2)
             value = self.serial.read_all()
             print(value)
 
-            return None
+            return value.decode().replace("\r\n", "")
 
         return None

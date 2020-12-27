@@ -116,36 +116,24 @@ void loop()
 {
     if(nasosOn == true)
     {
-        if(millis()/60000 - nasosLast > nasosDelayOn)
-        {
-            nasosPower(0);
-        }
+        if(millis()/60000 - nasosLast > nasosDelayOn) { nasosPower(0); }
     }
     
     else if(nasosOn == false)
     {
-        if(millis()/60000 - nasosLast > nasosDelayOff)
-        {
-            nasosPower(1);
-        }
+        if(millis()/60000 - nasosLast > nasosDelayOff) { nasosPower(1); }
     }
     
     for(int i=0; i<3; i++)
     {
         if(lampsOn[i] == true)
         {
-            if(millis()/60000 - lampslast[i] > lampsDelayOn)
-            {
-                lampsPower(i, 0);
-            }
+            if(millis()/60000 - lampslast[i] > lampsDelayOn) { lampsPower(i, 0); }
         }
         
         if(lampsOn[i] == false)
         {
-            if(millis()/60000 - lampslast[i] > lampsDelayOff)
-            {
-                lampsPower(i, 1);
-            }
+            if(millis()/60000 - lampslast[i] > lampsDelayOff) { lampsPower(i, 1); }
         }        
     }
     
@@ -166,20 +154,11 @@ void loop()
     
     if(data[0] == 'I')
     {
-        if(data[1] == 'L')
-        {
-            Serial.println(lampsPower(data[2], data[3]));
-        }
+        if(data[1] == 'L') { Serial.println(lampsPower(data[2], data[3])); }
         
-        else if(data[1] == 'F')
-        {
-            Serial.println(fanPower(data[2]));
-        }
+        else if(data[1] == 'F') { Serial.println(fanPower(data[2])); }
         
-        else if(data[1] == 'N')
-        {
-            Serial.println(nasosPower(data[2]));
-        }
+        else if(data[1] == 'N') { Serial.println(nasosPower(data[2])); }
         
         else
         {
@@ -189,40 +168,19 @@ void loop()
     
     else if(data[0] == 'O')
     {
-        if(data[1] == 'L')
-        {
-            Serial.println(lampsOn[data[2]-1]);
-        }
+        if(data[1] == 'L') { Serial.println(lampsOn[data[2]-1]); }
         
-        else if(data[1] == 'F')
-        {
-            Serial.println(fanOn);
-        }
+        else if(data[1] == 'F') { Serial.println(fanOn); }
         
-        else if(data[1] == 'N')
-        {
-            Serial.println(nasosOn);
-        }
+        else if(data[1] == 'N') { Serial.println(nasosOn); }
         
-        else if(data[1] == 'V')
-        {
-            Serial.println(vlPochva([data[2]-1]));
-        }
+        else if(data[1] == 'V') { Serial.println(vlPochva([data[2]-1])); }
         
-        else if(data[1] == 'O')
-        {
-            Serial.println(fotoData([data[2]-1]));
-        }
+        else if(data[1] == 'O') { Serial.println(fotoData([data[2]-1])); }
         
-        else if(data[1] == 'T')
-        {
-            Serial.println(tempData());
-        }
+        else if(data[1] == 'T') { Serial.println(tempData()); }
         
-        else
-        {
-            Serial.println("Error");
-        }
+        else { Serial.println("Error"); }
     }
     
     else
