@@ -176,11 +176,11 @@ class GG_DataQueue:
 
 
 class GG_Serial:
-    def __init__(self, root, port=None, timeout=0, baudrate=115200):
+    def __init__(self, root, port=None, timeout=0.2, baudrate=115200):
         self.root = root
         self.port, self.baudrate, self.timeout = port or self.get_connection_port(), baudrate, timeout
         self.serial = Serial(self.port, baudrate=self.baudrate, timeout=self.timeout)
-        self.serial.close()
+        # self.serial.close()
 
         self.SERIAL_COMMAND_SCHEME = "{mode}|{sensor}|{sensor_id}|{value}\r\n"
         self.SERIAL_COMMAND_REGEX = "[I|O]\\|\\w{1,}\\|\\w{1,2}\\d{1,2}\\|{0,}.{0,}"
@@ -247,17 +247,18 @@ class GG_Serial:
 
         print(self.serial.is_open)
 
-        self.switch_port_state()
+        # self.switch_port_state()
         value = None
 
         if self.serial.is_open:
             print(command)
             self.serial.write(command.encode())
+            sleep(0.1)
             value = self.serial.read_all()
             print(value)
 
             value = value.decode().replace("\r\n", "")
 
-        self.switch_port_state()
+        # self.switch_port_state()
 
         return value or None
