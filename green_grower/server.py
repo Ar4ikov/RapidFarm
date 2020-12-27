@@ -8,13 +8,13 @@ from green_grower.api import GG_API, GG_Errors
 
 
 class GreenGrower(Flask):
-    def __init__(self, app_name=__name__):
+    def __init__(self, app_name):
         super().__init__(app_name)
 
         self.api = GG_API(self)
         self.database = Database("green_grower.db", check_same_thread=False)
 
-    def run(self, host, port, debug=False, **kwargs):
+    def run(self, host, port, debug=False, *args, **kwargs):
         self.api.route_methods()
 
         @self.route("/")

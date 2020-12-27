@@ -3,6 +3,6 @@
 
 from green_grower import GreenGrower
 
-server = GreenGrower()
+server = GreenGrower(__name__)
 
 server.run("127.0.0.1", 80)
