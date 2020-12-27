@@ -1,20 +1,28 @@
 #include <OneWire.h>
 
-OneWire ds(6);
-int lamps[3] = {1, 2, 3};
-bool lampsOn[3] = {false, false, false};
-char vlazh[3] = {A0, A1, A2};
-char foto[3] = {A3, A4, A5};
-int fan = 4;
-bool fanOn = false;
-int nasos = 5
-bool nasosOn = false;
-unsigned int nasosLast = 0, lampsLast[3] = {0, 0, 0};
-int nasosDelayOn = 10, lampsDelayOn = 10, nasosDelayOff = 10, lampsDelayOff = 10;
+int lamp = 1, fan = 2, nasos = 3;
+OneWire ds(4);
+char vlazh[3] = {A0, A1, A2}, photo = A3;
+bool lampOn = false, fanOn = false, nasosOn = false;
+unsigned int nasosLast = 0, lampLast = 0;
+int nasosDelayOn = 10, lampDelayOn = 10, nasosDelayOff = 10, lampDelayOff = 10;
 int tempMax = 30;
+String data;
 
+int lampPower(int x) // 1\0 - on\off
+{
+    if(x != lampOn)
+    {
+        lampOn = !lampOn;
+        digitalWrite(lamp, lampOn);
+    }
+    
+    lampLast = millis() / 60000;
+    
+    return 0;
+}
 
-int fanPower(x)
+int fanPower(int x) // 1\0 - on\off
 {
     if(x != fanOn)
     {
@@ -25,7 +33,7 @@ int fanPower(x)
     return 0;
 }
 
-int nasosPower(x)
+int nasosPower(int x) //1\0 - on\off
 {
     if(x != nasosOn)
     {
@@ -33,43 +41,12 @@ int nasosPower(x)
         digitalWrite(nasos, nasosOn);
     }
     
-    nasosLast = millis() / 60000
+    nasosLast = millis() / 60000;
     
     return 0;
 }
 
-int lampsPower(x, y)
-{
-    if(lampsOn[x] != y)
-    {
-        lampsOn[x] = !lampsOn[x];
-        digitalWrite(lamps[x], lampsOn[x]);
-    }
-    
-    lampsLast[x] = millis() / 60000
-    
-    return 0;
-}
-
-int vlPochva(x)
-{
-    int value = analogRead(vlazh[x-1]);
-    value = 1024 - value;
-    value = value * 100 / 1024;
-    
-    return value;    
-}
-
-int fotoData(x)
-{
-    int value = analogRead(foto[x-1]);
-    value = 1024 - value;
-    value = value * 100 / 1024;
-    
-    return value;
-}
-
-int tempData()
+float tempData()
 {
     byte temp[2];
     
@@ -82,60 +59,81 @@ int tempData()
     ds.write(0xCC);
     ds.write(0xBE);
     
-    data[0] = ds.read();
-    data[1] = ds.read();
+    temp[0] = ds.read();
+    temp[1] = ds.read();
     
-    float temp =  ((data[1] << 8) | data[0]) * 0.0625;
+    float t =  ((data[1] << 8) | data[0]) * 0.0625;
     
-    return temp;
+    return t;
+} 
+
+int vlPochva(int x) // pin
+{
+    int value = analogRead(vlazh[x-1]);
+    value = 1024 - value;
+    value = value * 100 / 1024;
+    
+    return value;    
+}
+
+int photoData() //pin
+{
+    int value = analogRead(photo);
+    value = 1024 - value;
+    value = value * 100 / 1024;
+    
+    return value;
 }
 
 void setup()
 {
     Serial.begin(9600);
     
+    pinMode(lamp, OUTPUT);
+    pinMode(fan, OUTPUT);
+    pinMode(nasos, OUTPUT);
+    
     for(int i=0; i<3; i++)
     {
         pinMode(vlazh[i], INPUT);
     }
     
-    for(int i=0; i<3; i++)
-    {
-        pinMode(foto[i], INPUT);
-    }
-    
-    for(int i=0; i<3; i++)
-    {
-        pinMode(lamps[i], OUTPUT);
-    }
-    
-    pinMode(fan, OUTPUT);
+    pinMode(photo, INPUT);    
 }
 
 void loop()
 {
     if(nasosOn == true)
     {
-        if(millis()/60000 - nasosLast > nasosDelayOn) { nasosPower(0); }
+        if(millis()/60000 - nasosLast >= nasosDelayOn) 
+        { 
+          nasosPower(0); 
+        }
     }
     
     else if(nasosOn == false)
     {
-        if(millis()/60000 - nasosLast > nasosDelayOff) { nasosPower(1); }
+        if(millis()/60000 - nasosLast >= nasosDelayOff) 
+        { 
+          nasosPower(1);
+        }
     }
     
-    for(int i=0; i<3; i++)
+    if(lampOn == true)
     {
-        if(lampsOn[i] == true)
+        if(millis()/60000 - lampLast >= lampDelayOn)
         {
-            if(millis()/60000 - lampslast[i] > lampsDelayOn) { lampsPower(i, 0); }
+            lampPower(0);
         }
-        
-        if(lampsOn[i] == false)
-        {
-            if(millis()/60000 - lampslast[i] > lampsDelayOff) { lampsPower(i, 1); }
-        }        
     }
+        
+    else if(lampOn == false)
+    {
+        if(millis()/60000 - lampLast >= lampDelayOff)
+        {
+            lampPower(1);
+        }
+    } 
     
     if(tempData() >= tempMax)
     {
@@ -149,17 +147,28 @@ void loop()
     
     if(Serial.available())
     {
-        String data = Serial.readString();        
+        data = Serial.readString();        
     }
     
     if(data[0] == 'I')
     {
-        if(data[1] == 'L') { Serial.println(lampsPower(data[2], data[3])); }
+        int dt_2 = data[2] - '0';
         
-        else if(data[1] == 'F') { Serial.println(fanPower(data[2])); }
+        if(data[1] == 'L')
+        {
+            Serial.println(lampPower(dt_2));
+        }
         
-        else if(data[1] == 'N') { Serial.println(nasosPower(data[2])); }
+        else if(data[1] == 'F')
+        {
+            Serial.println(fanPower(dt_2));
+        }
         
+        else if(data[1] == 'N')
+        {
+            Serial.println(nasosPower(dt_2));
+        }
+
         else
         {
             Serial.println("Error");
@@ -168,21 +177,74 @@ void loop()
     
     else if(data[0] == 'O')
     {
-        if(data[1] == 'L') { Serial.println(lampsOn[data[2]-1]); }
         
-        else if(data[1] == 'F') { Serial.println(fanOn); }
+        int dt_2 = data[2] - 'O';
         
-        else if(data[1] == 'N') { Serial.println(nasosOn); }
+        if(data[1] == 'L')
+        {
+            Serial.println(lampOn);
+        }
         
-        else if(data[1] == 'V') { Serial.println(vlPochva([data[2]-1])); }
+        else if(data[1] == 'F') 
+        { 
+            Serial.println(fanOn); 
+        }
         
-        else if(data[1] == 'O') { Serial.println(fotoData([data[2]-1])); }
+        else if(data[1] == 'N') 
+        { 
+            Serial.println(nasosOn); 
+        }
+
+        else if(data[1] == 'V')
+        {
+            Serial.println(vlPochva(dt_2 - 1));
+        }
         
-        else if(data[1] == 'T') { Serial.println(tempData()); }
+        else if(data[1] == 'P')
+        {
+            Serial.println(photoData());
+        }
+
+        else if(data[1] == 'T') 
+        { 
+            Serial.println(tempData()); 
+        }
         
-        else { Serial.println("Error"); }
+        else if(data[1] == 'A')
+        {
+            Serial.print("L: ");
+            Serial.print(lampOn);
+            Serial.print("; ");        
+            
+            Serial.print("F: ");
+            Serial.print(fanOn);
+            Serial.print("; ");
+            
+            Serial.print("N: ");
+            Serial.print(nasosOn);
+            Serial.print("; ");
+            
+            for(int i=0;i<3;i++)
+            {
+                Serial.print("V" + String(i+1) + ": ");
+                Serial.print(vlPochva(data[i])+"; ");
+            }
+
+            Serial.print("P: ");
+            Serial.print(photoData());
+            Serial.print("; ");
+
+            Serial.print("T: ");
+            Serial.print(tempData());
+            Serial.print("; ");
+        }
+            
+        else
+        {
+            Serial.println("Error");
+        }
     }
-    
+
     else
     {
         Serial.println("Error");
