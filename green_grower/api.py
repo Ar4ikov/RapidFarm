@@ -251,8 +251,8 @@ class GG_Serial:
         value = None
 
         if self.serial.is_open:
+            print(command)
             self.serial.write(command.encode())
-            sleep(0.2)
             value = self.serial.read_all()
             print(value)
 
