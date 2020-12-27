@@ -245,6 +245,8 @@ class GG_Serial:
         :return:
         """
 
+        print(self.serial.is_open)
+
         self.switch_port_state()
         value = None
 
