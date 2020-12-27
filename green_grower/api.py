@@ -169,7 +169,7 @@ class GG_DataQueue:
                 self.database.insert_into("data", sensor_value)
                 sleep(0.1)
 
-            sleep(10)
+            sleep(2)
 
         data_io_thread.start()
         # data_io_thread2.start()
