@@ -30,7 +30,7 @@ class GreenGrower(Flask):
 
             try:
                 command = self.serial.parse_command(data)
-            except GG_Errors as e:
+            except KeyError or GG_Errors as e:
                 print(e)
                 return self.api.error(400, {"error_message": "Client data error: use format with regex."})
             else:
