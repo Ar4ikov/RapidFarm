@@ -27,10 +27,10 @@ class GG_API:
         return request.args.to_dict() or request.form.to_dict() or request.data or request.json or {}
 
     def response(self, code, data):
-        return self.key_sorting({"status": code, "response": data}), code
+        return str(self.key_sorting({"status": code, "response": data})), code
 
     def error(self, code, data):
-        return self.key_sorting({"status": code, "response": data}), code
+        return str(self.key_sorting({"status": code, "response": data})), code
 
     def route_methods(self) -> bool:
 
