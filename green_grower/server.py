@@ -4,18 +4,15 @@
 from flask import Flask, request, jsonify, render_template
 from sql_extended_objects import ExtRequests as Database
 from sql_extended_objects import ExtObject as DatabaseObject
-from green_grower.api import GG_API, GG_Serial, GG_Errors, GG_DataQueue
+from green_grower.api import GG_API, GG_Errors
 
 
 class GreenGrower(Flask):
     def __init__(self, app_name=__name__):
         super().__init__(app_name)
 
-        self.serial = GG_Serial(self)
         self.api = GG_API(self)
         self.database = Database("green_grower.db", check_same_thread=False)
-        self.data_queue = GG_DataQueue(self)
-        self.data_queue.compile_threads()
 
     def run(self, host, port, debug=False, **kwargs):
         self.api.route_methods()
@@ -37,5 +34,9 @@ class GreenGrower(Flask):
                 self.serial.execute(command)
 
             return self.api.response(200, {"params": data})
+
+        @self.route("/get_url_map", methods=["GET"])
+        def get_url_map():
+            return self.api.response({"urls": [x.rule for x in self.url_map.iter_rules()]}, 200)
 
         super().run(host=host, port=port, debug=debug, threaded=True)

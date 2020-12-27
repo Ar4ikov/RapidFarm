@@ -2,6 +2,7 @@
 # | Время: 18.12.2020 - 05:04
 
 from green_grower.server import GreenGrower
+from green_grower.farm import GG_Client
 from sql_extended_objects import ExtRequests as Database
 from sql_extended_objects import ExtObject as DatabaseObject
 
@@ -24,8 +25,7 @@ database.commit(
             `id` INTEGER PRIMARY KEY AUTOINCREMENT ,
             `sensor_id` TEXT NOT NULL ,
             `value` TEXT NOT NULL ,
-            `date` DATE ,
-            `metric` TEXT default 'const'
+            `date` DATE
         );
     """
 )
@@ -37,7 +37,8 @@ database.commit(
             `name` TEXT NOT NULL ,
             `first_time_updated` DATE NOT NULL ,
             `last_time_updated` DATE NOT NULL ,
-            `countdown` INTEGER NOT NULL 
+            `countdown` INTEGER NOT NULL ,
+            `duration` FLOAT DEFAULT 0.001
         );
     """
 )
