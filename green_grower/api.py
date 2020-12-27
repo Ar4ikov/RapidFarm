@@ -176,7 +176,7 @@ class GG_DataQueue:
 
 
 class GG_Serial:
-    def __init__(self, root, port=None, timeout=0.01, baudrate=115200):
+    def __init__(self, root, port=None, timeout=0.2, baudrate=115200):
         self.root = root
         self.port, self.baudrate, self.timeout = port or self.get_connection_port(), baudrate, timeout
         self.serial = Serial(self.port, baudrate=self.baudrate, timeout=self.timeout)
@@ -253,7 +253,6 @@ class GG_Serial:
         if self.serial.is_open:
             print(command)
             self.serial.write(command.encode())
-            sleep(0.3)
             value = self.serial.read_all()
             print(value)
 
