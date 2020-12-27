@@ -180,6 +180,7 @@ class GG_Serial:
         self.root = root
         self.port, self.baudrate, self.timeout = port or self.get_connection_port(), baudrate, timeout
         self.serial = Serial(self.port, baudrate=self.baudrate, timeout=self.timeout)
+        self.serial.close()
 
         self.SERIAL_COMMAND_SCHEME = "{mode}|{sensor}|{sensor_id}|{value}\r\n"
         self.SERIAL_COMMAND_REGEX = "[I|O]\\|\\w{1,}\\|\\w{1,2}\\d{1,2}\\|{0,}.{0,}"
@@ -190,6 +191,15 @@ class GG_Serial:
                 self.serial.close()
 
         self.serial.open()
+
+        return True
+
+    def switch_port_state(self) -> bool:
+        if self.serial:
+            if self.serial.is_open:
+                self.serial.close()
+            else:
+                self.serial.open()
 
         return True
 
@@ -235,12 +245,17 @@ class GG_Serial:
         :return:
         """
 
+        self.switch_port_state()
+        value = None
+
         if self.serial.is_open:
             self.serial.write(command.encode())
             sleep(0.2)
             value = self.serial.read_all()
             print(value)
 
-            return value.decode().replace("\r\n", "")
+            value = value.decode().replace("\r\n", "")
 
-        return None
+        self.switch_port_state()
+
+        return value or None
