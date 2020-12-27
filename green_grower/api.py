@@ -245,7 +245,7 @@ class GG_Serial:
         :return:
         """
 
-        print(self.serial.is_open)
+        # print(self.serial.is_open)
 
         # self.switch_port_state()
         value = None
@@ -253,7 +253,7 @@ class GG_Serial:
         if self.serial.is_open:
             print(command)
             self.serial.write(command.encode())
-            # sleep(0.1)
+            sleep(0.1)
             value = self.serial.read_all()
             print(value)
 
