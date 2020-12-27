@@ -182,7 +182,7 @@ class GG_Serial:
         self.serial = Serial(self.port, baudrate=self.baudrate, timeout=self.timeout)
         # self.serial.close()
 
-        self.SERIAL_COMMAND_SCHEME = "{mode}|{sensor}|{sensor_id}|{value}\r\n"
+        self.SERIAL_COMMAND_SCHEME = "{mode}|{sensor}|{sensor_id}|{value}"
         self.SERIAL_COMMAND_REGEX = "[I|O]\\|\\w{1,}\\|\\w{1,2}\\d{1,2}\\|{0,}.{0,}"
 
     def reopen_port(self) -> bool:
@@ -253,7 +253,7 @@ class GG_Serial:
         if self.serial.is_open:
             print(command)
             self.serial.write(command.encode())
-            sleep(0.1)
+            # sleep(0.1)
             value = self.serial.read_all()
             print(value)
 
