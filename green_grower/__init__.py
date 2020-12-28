@@ -53,3 +53,20 @@ database.commit(
         );
     """
 )
+
+database.commit(
+    """
+        CREATE TABLE IF NOT EXISTS `tasks` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT ,
+            `uuid` TEXT NOT NULL ,
+            `ip` TEXT NOT NULL ,
+            `mode` TEXT NOT NULL ,
+            `sensor_id` TEXT NOT NULL ,
+            `value` TEXT ,
+            `ts` DATE NOT NULL ,
+            `status` TEXT DEFAULT 'in_progress' ,
+            `executed_time` DATE ,
+            `response` TEXT
+        );
+    """
+)

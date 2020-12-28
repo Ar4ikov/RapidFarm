@@ -1,19 +1,18 @@
 # | Created by Ar4ikov
 # | Время: 18.12.2020 - 05:14
-from time import sleep, time
 
-from regex import match
-from threading import Thread, main_thread
-from serial import Serial
-from serial.tools import list_ports
+from time import sleep, time
 from sql_extended_objects import ExtObject as DatabaseObject
-from serial.serialutil import SerialException, SerialTimeoutException
 from flask import request, jsonify
+from uuid import uuid4 as uuid
 
 
 class GG_API:
     def __init__(self, root):
         self.root = root
+
+        self.tasks = []
+        self.executed_tasks = []
 
     @staticmethod
     def key_sorting(data: dict):
@@ -101,63 +100,125 @@ class GG_API:
 
             return self.response(200, {"params": data})
 
+        @self.root.route("/add_task", methods=["GET", "POST"])
+        def add_task():
+            data = self.get_data()
+
+            if "mode" not in data or "sensor_id" not in data:
+                return self.error(400, {"error_message": "Не все параметры были включены", "params": data})
+
+            if data["mode"] == "I" and "value" not in data:
+                return self.error(400, {"error_message": "Не указано значение для датчика", "params": data})
+
+            task = DatabaseObject()
+            task.uuid = str(uuid())
+            task.ip = request.remote_addr
+            task.mode = data["mode"]
+            task.sensor_id = data["sensor_id"]
+            task.value = data.get("value", 0)
+            task.ts = time()
+
+            task_id = self.root.database.insert_into("tasks", task)[0].id
+
+            self.tasks.append({
+                "id": task_id,
+                "uuid": task.uuid,
+                "ip": task.ip,
+                "mode": task.mode,
+                "sensor_id": task.sensor_id,
+                "value": task.value,
+                "ts": task.ts
+            })
+
+            return self.response(200, {"uuid": task.uuid, "params": data})
+
+        @self.root.route("/task_poll", methods=["GET", "POST"])
+        def task_poll():
+            data = self.get_data()
+
+            if "ts" not in data:
+                return self.error(400, {"error_message": "Не все параметры были указаны.", "params": data})
+
+            try:
+                ts = float(data["ts"])
+            except ValueError:
+                return self.error(400, {"error_message": "Тип параметра ts должен быть INT или FLOAT", "params": data})
+
+            timeout = float(data.get("timeout", 25))
+
+            end_t = time() + timeout
+            response = []
+
+            while len(response) == 0:
+
+                for event in self.tasks:
+                    if float(event["ts"]) >= ts:
+                        response.append(event)
+
+                if time() > end_t:
+                    break
+
+                sleep(0.001)
+
+            return self.response(200, {"tasks": response})
+
+        @self.root.route("/execute_task", methods=["GET", "POST"])
+        def execute_task():
+            data = self.get_data()
+
+            if "uuid" not in data or "executed_time" not in data or "response" not in data:
+                return self.error(400, {"error_message": "Не все параметры были указаны.", "params": data})
+
+            task = self.root.database.select_all("tasks", DatabaseObject, where=f"""`uuid` = '{data["uuid"]}'""")
+
+            if not task:
+                return self.error(400, {
+                    "error_message": "Такой задачи не существует или она не была ещё создана", "params": data
+                })
+
+            task = task[0]
+            task["executed_time"] = data["executed_time"]
+            task["response"] = data["response"]
+            task["status"] = "processed"
+
+            response_body = {
+                "id": task.id,
+                "uuid": data["uuid"],
+                "mode": task.mode,
+                "sensor_id": task.sensor_id,
+                "value": task.value,
+                "executed_time": data["executed_time"],
+                "response": data["response"]
+            }
+
+            self.executed_tasks.append(response_body)
+
+            return self.response(200, {})
+
+        @self.root.route("/get_executed_task", methods=["GET", "POST"])
+        def get_executed_task():
+            data = self.get_data()
+
+            if "uuid" not in data:
+                return self.error(400, {"error_message": "Не все параметры были указаны.", "params": data})
+
+            timeout = float(data.get("timeout", 25))
+            event_ = None
+
+            end_t = time() + timeout
+            while not event_:
+
+                for event in self.executed_tasks:
+                    if event["uuid"] == data["uuid"]:
+                        event_ = event
+
+                if time() > end_t:
+                    break
+
+                sleep(0.0001)
+
+            if event_: self.executed_tasks.remove(event_)
+
+            return self.response(200, {"task": event_})
+
         return True
-
-
-class GG_Errors(Exception):
-    def __init__(self, message, errors):
-        super().__init__(message)
-
-        self.errors = errors
-
-    def parse_code(self):
-        ...
-
-
-class GG_Thread(Thread):
-    def __init__(self, root, name):
-        super().__init__()
-        self.root = root
-        self.name = name
-
-        self.functions = []
-        self.is_dead = False
-
-    def is_already_function(self, name):
-        for obj in self.functions:
-            if obj["name"] == name:
-                return True
-
-        return False
-
-    def kill(self) -> None:
-        self.is_dead = True
-
-        return None
-
-    def add_function(self, func_name):
-        def deco(func, *args, **kwargs):
-            # func(*args, **kwargs)
-
-            if self.is_already_function(func_name):
-                return True
-
-            self.functions.append(
-                {
-                    "name": func_name,
-                    "function": func,
-                    "args": args,
-                    "kwargs": kwargs
-                }
-            )
-
-        return deco
-
-    def run(self):
-        print(self.functions)
-        while not self.is_dead:
-            for func in self.functions:
-                func["function"](*func["args"], **func["kwargs"])
-
-            sleep(0.00001)
-
