@@ -18,9 +18,10 @@ class GG_Client:
         self.scheme = f"{self.protocol}://{self.addr}/"
 
         self.serial = GG_Serial(self)
-        self.data_queue = GG_DataQueue(self)
         self.sensors = self.get("sensors")["response"]["sensors"]
+        print(self.sensors)
 
+        self.data_queue = GG_DataQueue(self)
         self.data_queue.compile_threads()
 
     def add_data(self, sensor_id, value):
@@ -46,7 +47,6 @@ class GG_Client:
 class GG_DataQueue:
     def __init__(self, root):
         self.root = root
-        self.database = self.root.database
 
     def compile_threads(self):
         data_io_thread = GG_Thread(self, "Data I/O Thread")

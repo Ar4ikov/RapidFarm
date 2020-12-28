@@ -8,7 +8,7 @@ from serial import Serial
 from serial.tools import list_ports
 from sql_extended_objects import ExtObject as DatabaseObject
 from serial.serialutil import SerialException, SerialTimeoutException
-from flask import request
+from flask import request, jsonify
 
 
 class GG_API:
@@ -27,10 +27,10 @@ class GG_API:
         return request.args.to_dict() or request.form.to_dict() or request.data or request.json or {}
 
     def response(self, code, data):
-        return str(self.key_sorting({"status": code, "response": data})), code
+        return jsonify(self.key_sorting({"status": code, "response": data, "ts": time()})), code
 
     def error(self, code, data):
-        return str(self.key_sorting({"status": code, "response": data})), code
+        return jsonify(self.key_sorting({"status": code, "response": data, "ts": time()})), code
 
     def route_methods(self) -> bool:
 
@@ -82,7 +82,7 @@ class GG_API:
             sensors = self.root.database.select_all("sensors", DatabaseObject)
 
             return self.response(
-                {"sensors": [{"name": x.name, "sensor_id": x.sensor_id, "metric": x.metric} for x in sensors]}, 200
+                200, {"sensors": [{"name": x.name, "sensor_id": x.sensor_id, "metric": x.metric} for x in sensors]}
             )
 
         @self.root.route("/add_data", methods=["GET", "POST"])

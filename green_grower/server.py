@@ -37,6 +37,6 @@ class GreenGrower(Flask):
 
         @self.route("/get_url_map", methods=["GET"])
         def get_url_map():
-            return self.api.response({"urls": [x.rule for x in self.url_map.iter_rules()]}, 200)
+            return self.api.response(200, {"urls": [x.rule for x in self.url_map.iter_rules()]})
 
         super().run(host=host, port=port, debug=debug, threaded=True)
