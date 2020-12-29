@@ -141,7 +141,7 @@ class GG_DataQueue:
 
                                 break
 
-        timers_thread.database = Database("green_grower.db")
+        timers_thread.database = Database("green_grower_client.db")
 
         @timers_thread.add_function("timers")
         def timers():
@@ -159,57 +159,45 @@ class GG_DataQueue:
                 else:
                     statement = statement[0]
 
-                switch_state = lambda x: 1 if x is True else 0
-
                 current_t = time()
-                if abs(current_t - timer["last_time_updated"]) < timer["duration"] + timer["countdown"]:
-                    if statement.state is True:
-                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
-                            pass
-                        else:
-                            command = self.root.serial.parse_command({
-                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
-                            })
-                            value = self.root.serial.queue.execute_command(command)
-                            statement["state"] = not statement.state
+                ltu_t = self.root.get("timers", name=timer["name"])["response"]["last_time_updated"]
+                delta = current_t - ltu_t
+
+                def check_phase(state, delta, duration, countdown):
+                    if state == 1:
+                        if delta - duration > 0:
                             get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                            return "countdown"
+                        else:
+                            return "duration"
                     else:
-                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
-                            command = self.root.serial.parse_command({
-                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
-                            })
-                            value = self.root.serial.queue.execute_command(command)
-                            statement["state"] = not statement.state
+                        if delta - countdown > 0:
                             get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                            return "duration"
                         else:
-                            pass
+                            return "countdown"
+
+                phase = check_phase(statement.state, delta, timer["duration"], timer["countdown"])
+                print(phase)
+
+                if phase == "duration":
+                    statement["state"] = 1
+
                 else:
-                    if statement.state is True:
-                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
-                            pass
-                        else:
-                            command = self.root.serial.parse_command({
-                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
+                    statement["state"] = 0
+
+                state = timers_thread.database.select_all(
+                    "statements", DatabaseObject, where=f"""`name` = '{timer["name"]}'""")[0].state
+
+                command = self.root.serial.parse_command({
+                                "mode": "I", "sensor_id": timer["sensor_id"], "value": state
                             })
-                            value = self.root.serial.queue.execute_command(command)
-                            statement["state"] = not statement.state
-                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
-                    else:
-                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
-                            command = self.root.serial.parse_command({
-                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
-                            })
-                            value = self.root.serial.queue.execute_command(command)
-                            statement["state"] = not statement.state
-                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
-                        else:
-                            pass
+                value = self.root.serial.queue.execute_command(command)
 
         # data_io_thread.start()
         tasks_io_thread.start()
         events_thread.start()
         timers_thread.start()
-        # data_io_thread2.start()
 
 
 class GG_Serial:
@@ -282,15 +270,12 @@ class GG_Serial:
         value = None
 
         if self.serial.is_open:
-            print(command)
             self.serial.write(command.encode())
 
             value = self.serial.read_all()
             while not value:
                 value = self.serial.readall()
                 sleep(0.001)
-
-            print(value)
 
             value = value.decode().replace("\r\n", "")
 

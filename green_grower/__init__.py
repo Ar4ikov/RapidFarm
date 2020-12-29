@@ -7,6 +7,7 @@ from sql_extended_objects import ExtRequests as Database
 from sql_extended_objects import ExtObject as DatabaseObject
 
 database = Database("green_grower.db", check_same_thread=False)
+database_client = Database("green_grower_client.db", check_same_thread=False)
 
 database.commit(
     """
@@ -44,7 +45,7 @@ database.commit(
     """
 )
 
-database.commit(
+database_client.commit(
     """
         CREATE TABLE IF NOT EXISTS `statements` (
             `id` INTEGER PRIMARY KEY AUTOINCREMENT ,
