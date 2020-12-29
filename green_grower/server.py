@@ -3,6 +3,7 @@
 
 from flask import Flask, request, jsonify, render_template
 from sql_extended_objects import ExtRequests as Database
+from sys import path
 from sql_extended_objects import ExtObject as DatabaseObject
 from green_grower.objects import GG_Errors
 from green_grower.api import GG_API
@@ -25,5 +26,9 @@ class GreenGrower(Flask):
         @self.route("/get_url_map", methods=["GET"])
         def get_url_map():
             return self.api.response(200, {"urls": [x.rule for x in self.url_map.iter_rules()]})
+
+        @self.route("/robots.txt")
+        def robots():
+            return open(path.join(path.dirname(__file__), "robots.txt"), "r").read()
 
         super().run(host=host, port=port, debug=debug, threaded=True)
