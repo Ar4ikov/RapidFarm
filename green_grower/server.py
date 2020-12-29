@@ -3,7 +3,7 @@
 
 from flask import Flask, request, jsonify, render_template
 from sql_extended_objects import ExtRequests as Database
-from sys import path
+from os import path
 from sql_extended_objects import ExtObject as DatabaseObject
 from green_grower.objects import GG_Errors
 from green_grower.api import GG_API
