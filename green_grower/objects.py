@@ -6,7 +6,7 @@ from time import sleep
 
 
 class GG_Errors(Exception):
-    def __init__(self, message, errors):
+    def __init__(self, message, errors={}):
         super().__init__(message)
 
         self.errors = errors
