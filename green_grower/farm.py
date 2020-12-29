@@ -11,6 +11,8 @@ from serial import Serial
 from serial.tools import list_ports
 from serial.serialutil import SerialTimeoutException, SerialException
 from requests import get, post
+from requests.exceptions import ConnectTimeout, ConnectionError, RequestException
+from urllib3.exceptions import MaxRetryError, NewConnectionError
 from regex import match
 from time import time, sleep
 from uuid import uuid4 as uuid
@@ -40,12 +42,24 @@ class GG_Client:
         return request.json()["ts"]
 
     def get(self, _object, **params):
-        request = get(self.scheme + f"get_{_object}", params=params)
+        request = self.get_response(self.scheme + f"get_{_object}", params=params)
 
         if request.status_code != 200:
             raise GG_Errors(request.json())
 
         return request.json()
+
+    @staticmethod
+    def get_response(*args, **kwargs):
+        while True:
+            try:
+                value = get(*args, **kwargs)
+            except ConnectionError:
+                print("Соединение не установлено, повторная попытка через 1 секунду...")
+            else:
+                return value
+
+            sleep(1)
 
     def get_tasks(self):
         pass
@@ -78,7 +92,7 @@ class GG_DataQueue:
         @tasks_io_thread.add_function("task_poll")
         def get_tasks():
             time_start = time()
-            request = get(self.root.scheme + "task_poll", params={"ts": time_start, "timeout": 20})
+            request = self.root.get_response(self.root.scheme + "task_poll", params={"ts": time_start, "timeout": 20})
             tasks = request.json()
 
             for task in tasks["response"]["tasks"]:
@@ -102,7 +116,7 @@ class GG_DataQueue:
         @events_thread.add_function("event_poll")
         def get_events():
             time_start = time()
-            request = get(self.root.scheme + "event_poll", params={"ts": time_start, "timeout": 20})
+            request = self.root.get_response(self.root.scheme + "event_poll", params={"ts": time_start, "timeout": 20})
             events = request.json()
 
             for event in events["response"]["events"]:
@@ -166,13 +180,13 @@ class GG_DataQueue:
                 def check_phase(state, delta, duration, countdown):
                     if state == 1:
                         if delta - duration > 0:
-                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                            self.root.get_response(self.root.scheme + "update_timer", params={"name": timer["name"]})
                             return "countdown"
                         else:
                             return "duration"
                     else:
                         if delta - countdown > 0:
-                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                            self.root.get_response(self.root.scheme + "update_timer", params={"name": timer["name"]})
                             return "duration"
                         else:
                             return "countdown"

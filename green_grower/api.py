@@ -12,11 +12,15 @@ class GG_API:
         self.root = root
 
         self.MAX_EVENTS_PER_ARRAY = 500
+        self.MAX_DATA_PER_ARRAY = 10000
 
         self.tasks = []
         self.executed_tasks = []
 
         self.events = []
+        self.data = []
+
+        self.preload_data()
 
     @staticmethod
     def key_sorting(data: dict):
@@ -34,6 +38,23 @@ class GG_API:
 
     def error(self, code, data):
         return jsonify(self.key_sorting({"status": code, "response": data, "ts": time()})), code
+
+    def preload_data(self):
+        data = self.root.database.select_all("data", DatabaseObject)
+        for event in data:
+            self.data.append({
+                "id": event.id,
+                "sensor_id": event.sensor_id,
+                "value": event.value,
+                "date": event.date,
+                "metric": event.metric
+            })
+
+            if len(self.data) > self.MAX_DATA_PER_ARRAY:
+                self.data.pop(0)
+
+        print(len(self.data))
+        return True
 
     def create_event(self, _object, action, subject):
         event = DatabaseObject()
@@ -62,6 +83,52 @@ class GG_API:
         return event_id, event.uuid, event.ip, event.ts
 
     def route_methods(self) -> bool:
+
+        @self.root.route("/get_data", methods=["GET", "POST"])
+        def data_get():
+            data = self.get_data()
+
+            response = {}
+
+            for pack in self.data:
+                if pack["sensor_id"] not in response:
+                    response[pack["sensor_id"]] = []
+
+                date, value, metric = pack["date"], pack["value"], pack["metric"]
+                response[pack["sensor_id"]].append({
+                    "date": date,
+                    "value": value,
+                    "metric": metric
+                })
+
+            if "latest" in data:
+                print(1)
+                return self.response(200, {k: v[-1] for k, v in response.items()})
+
+            if "ts" in data:
+                try:
+                    ts = float(data["ts"])
+                except ValueError:
+                    return self.error(400, {"error_message": "Некорректный тип для 'ts' -> INT or FLOAT"})
+
+                return self.response(200, {k: [x for x in v if float(x["date"]) > ts] for k, v in response.items()})
+
+            if "from_ts" in data and "past_ts" in data:
+                try:
+                    if data["past_ts"] == "current_time":
+                        from_ts, past_ts = float(data["from_ts"]), time()
+                    else:
+                        from_ts, past_ts = float(data["from_ts"]), float(data["past_ts"])
+                except ValueError:
+                    return self.error(
+                        400, {"error_message": "Некорректный тип для 'from_ts' и 'past_ts' -> INT or FLOAT"})
+
+                return self.response(
+                    200, {k: [
+                        x for x in v if from_ts < float(x["date"]) < past_ts
+                    ] for k, v in response.items()})
+
+            return self.response(200, response)
 
         @self.root.route("/add_sensor", methods=["GET", "POST"])
         def add_sensor():
@@ -118,7 +185,7 @@ class GG_API:
                 return self.error(400, {"error_message": "Не все параметры были включены", "params": data})
 
             timer_same = self.root.database.select_all(
-                "timers", DatabaseObject, where=f"""`name` = '{data["name"]}'"""
+                "timers", DatabaseObject, where=f"""`name` = '{data["name"]}' OR `sensor_id` = '{data["sensor_id"]}'"""
             )
 
             if timer_same:
@@ -248,7 +315,18 @@ class GG_API:
             data_.value = data["value"]
             data_.date = time()
 
-            self.root.database.insert_into("data", data_)
+            data_id = self.root.database.insert_into("data", data_)[0].id
+
+            self.data.append({
+                "id": data_id,
+                "sensor_id": data["sensor_id"],
+                "value": data["value"],
+                "date": data_.date,
+                "metric": "const"
+            })
+
+            if len(self.data) > self.MAX_DATA_PER_ARRAY:
+                self.data.pop(0)
 
             return self.response(200, {"params": data})
 
