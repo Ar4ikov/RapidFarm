@@ -35,9 +35,10 @@ database.commit(
         CREATE TABLE IF NOT EXISTS `timers` (
             `id` INTEGER PRIMARY KEY AUTOINCREMENT ,
             `name` TEXT NOT NULL ,
+            `sensor_id` TEXT NOT NULL ,
             `first_time_updated` DATE NOT NULL ,
             `last_time_updated` DATE NOT NULL ,
-            `countdown` INTEGER NOT NULL ,
+            `countdown` FLOAT NOT NULL ,
             `duration` FLOAT DEFAULT 0.001
         );
     """
@@ -67,6 +68,20 @@ database.commit(
             `status` TEXT DEFAULT 'in_progress' ,
             `executed_time` DATE ,
             `response` TEXT
+        );
+    """
+)
+
+database.commit(
+    """
+        CREATE TABLE IF NOT EXISTS `events` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT ,
+            `uuid` TEXT NOT NULL ,
+            `ip` TEXT NOT NULL ,
+            `object` TEXT NOT NULL ,
+            `action` TEXT NOT NULL ,
+            `subject` TEXT NOT NULL ,
+            `ts` DATE NOT NULL
         );
     """
 )

@@ -5,6 +5,8 @@ from threading import Thread
 
 from green_grower.objects import GG_Errors, GG_Thread
 
+from sql_extended_objects import ExtRequests as Database
+from sql_extended_objects import ExtObject as DatabaseObject
 from serial import Serial
 from serial.tools import list_ports
 from serial.serialutil import SerialTimeoutException, SerialException
@@ -22,8 +24,9 @@ class GG_Client:
 
         self.serial = GG_Serial(self)
         self.serial.queue()
+
         self.sensors = self.get("sensors")["response"]["sensors"]
-        print(self.sensors)
+        self.timers = self.get("timers")["response"]["timers"]
 
         self.data_queue = GG_DataQueue(self)
         self.data_queue.compile_threads()
@@ -36,8 +39,8 @@ class GG_Client:
 
         return request.json()["ts"]
 
-    def get(self, _object):
-        request = get(self.scheme + f"get_{_object}")
+    def get(self, _object, **params):
+        request = get(self.scheme + f"get_{_object}", params=params)
 
         if request.status_code != 200:
             raise GG_Errors(request.json())
@@ -54,7 +57,9 @@ class GG_DataQueue:
 
     def compile_threads(self):
         data_io_thread = GG_Thread(self, "Data I/O Thread")
-        tasks_io_thread = GG_Thread(self, "Tasks I/O Thread")
+        tasks_io_thread = GG_Thread(self, "Tasks I/O XHR Polling")
+        events_thread = GG_Thread(self, "Events XHR Polling")
+        timers_thread = GG_Thread(self, "Timers Counting Thread")
 
         @data_io_thread.add_function("data_temps")
         def get_sensors_data():
@@ -94,8 +99,116 @@ class GG_DataQueue:
 
                 print(response.json())
 
+        @events_thread.add_function("event_poll")
+        def get_events():
+            time_start = time()
+            request = get(self.root.scheme + "event_poll", params={"ts": time_start, "timeout": 20})
+            events = request.json()
+
+            for event in events["response"]["events"]:
+                print(event)
+                uuid_t, _object, action, subject = event["uuid"], event["object"], event["action"], event["subject"]
+
+                if _object == "sensor":
+                    if action == "add":
+                        sensor = self.root.get("sensors", sensor_id=subject)["response"]
+                        self.root.sensors.append(
+                            {"name": sensor["name"], "metric": sensor["metric"], "sensor_id": sensor["id"]}
+                        )
+
+                    elif action == "remove":
+                        for sensor in self.root.sensors:
+                            if sensor["sensor_id"] == subject:
+                                self.root.sensors.remove(sensor)
+                                break
+
+                elif _object == "timer":
+                    if action == "add":
+                        timer = self.root.get("timers", name=subject)["response"]
+                        self.root.timers.append(
+                            {"name": timer["name"], "first_time_updated": timer["first_time_updated"],
+                             "last_time_updated": timer["last_time_updated"], "countdown": timer["countdown"],
+                             "duration": timer["duration"], "sensor_id": timer["sensor_id"]}
+                        )
+
+                    elif action == "remove":
+                        for timer in self.root.timers:
+                            if timer["name"] == subject:
+                                self.root.timers.remove(timer)
+
+                                uuid_ = self.root.serial.queue.add_command(f"""I{timer["sensor_id"]}1""")
+                                _ = self.root.serial.queue.get_executed_command(uuid_)[1]
+
+                                break
+
+        timers_thread.database = Database("green_grower.db")
+
+        @timers_thread.add_function("timers")
+        def timers():
+            for timer in self.root.timers:
+                statement = timers_thread.database.select_all(
+                    "statements", DatabaseObject, where=f"""`name` = '{timer["name"]}'""")
+
+                if not statement:
+                    statement = DatabaseObject()
+                    statement.name = timer["name"]
+                    statement.state = True
+                    statement.value = 1
+
+                    statement = timers_thread.database.insert_into("statements", statement)[0]
+                else:
+                    statement = statement[0]
+
+                switch_state = lambda x: 1 if x is True else 0
+
+                current_t = time()
+                if abs(current_t - timer["last_time_updated"]) < timer["duration"] + timer["countdown"]:
+                    if statement.state is True:
+                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
+                            pass
+                        else:
+                            command = self.root.serial.parse_command({
+                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
+                            })
+                            value = self.root.serial.queue.execute_command(command)
+                            statement["state"] = not statement.state
+                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                    else:
+                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
+                            command = self.root.serial.parse_command({
+                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
+                            })
+                            value = self.root.serial.queue.execute_command(command)
+                            statement["state"] = not statement.state
+                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                        else:
+                            pass
+                else:
+                    if statement.state is True:
+                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
+                            pass
+                        else:
+                            command = self.root.serial.parse_command({
+                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
+                            })
+                            value = self.root.serial.queue.execute_command(command)
+                            statement["state"] = not statement.state
+                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                    else:
+                        if abs(current_t - timer["last_time_updated"]) < min(timer["duration"], timer["countdown"]):
+                            command = self.root.serial.parse_command({
+                                "mode": "I", "sensor_id": timer["sensor_id"], "value": switch_state(statement.state)
+                            })
+                            value = self.root.serial.queue.execute_command(command)
+                            statement["state"] = not statement.state
+                            get(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                        else:
+                            pass
+
         # data_io_thread.start()
         tasks_io_thread.start()
+        events_thread.start()
+        timers_thread.start()
         # data_io_thread2.start()
 
 
@@ -190,6 +303,12 @@ class GG_Serial:
 
                 self.commands = []
                 self.commands_executed = []
+
+            def execute_command(self, command):
+                uuid_ = self.add_command(command)
+                value = self.get_executed_command(uuid_)[1]
+
+                return value
 
             def add_command(self, command):
                 uuid_ = str(uuid())
