@@ -37,16 +37,10 @@ class GG_Client:
     def add_data(self, sensor_id, value):
         request = post(self.scheme + "add_data", data={"sensor_id": sensor_id, "value": value})
 
-        if request.status_code != 200:
-            raise GG_Errors(f"HTTP ERROR -> {request.status_code}")
-
         return request.json()["ts"]
 
     def get(self, _object, **params):
         request = self.get_response(self.scheme + f"get_{_object}", params=params)
-
-        if request.status_code != 200:
-            raise GG_Errors(f"HTTP ERROR -> {request.status_code}")
 
         return request.json()
 
@@ -60,7 +54,8 @@ class GG_Client:
                 print("Соединение не установлено, повторная попытка через 1 секунду...")
                 print(str(e))
             else:
-                return value
+                if value.status_code == 200:
+                    return value
 
             sleep(1)
 
