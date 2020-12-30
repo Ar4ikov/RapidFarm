@@ -54,8 +54,10 @@ class GG_Client:
         while True:
             try:
                 value = get(*args, **kwargs)
-            except ConnectionError:
+            except (ConnectionError, ConnectTimeout, ConnectionRefusedError, ConnectionAbortedError, RequestException,
+                    GG_Errors) as e:
                 print("Соединение не установлено, повторная попытка через 1 секунду...")
+                print(str(e))
             else:
                 return value
 
@@ -93,6 +95,10 @@ class GG_DataQueue:
         def get_tasks():
             time_start = time()
             request = self.root.get_response(self.root.scheme + "task_poll", params={"ts": time_start, "timeout": 20})
+
+            if request.status_code != 200:
+                return False
+
             tasks = request.json()
 
             for task in tasks["response"]["tasks"]:
@@ -117,6 +123,10 @@ class GG_DataQueue:
         def get_events():
             time_start = time()
             request = self.root.get_response(self.root.scheme + "event_poll", params={"ts": time_start, "timeout": 20})
+
+            if request.status_code != 200:
+                return False
+
             events = request.json()
 
             for event in events["response"]["events"]:
@@ -150,8 +160,7 @@ class GG_DataQueue:
                             if timer["name"] == subject:
                                 self.root.timers.remove(timer)
 
-                                uuid_ = self.root.serial.queue.add_command(f"""I{timer["sensor_id"]}1""")
-                                _ = self.root.serial.queue.get_executed_command(uuid_)[1]
+                                value = self.root.serial.queue.execute_command(f"""I{timer["sensor_id"]}1""")
 
                                 break
 
@@ -177,22 +186,22 @@ class GG_DataQueue:
                 ltu_t = self.root.get("timers", name=timer["name"])["response"]["last_time_updated"]
                 delta = current_t - ltu_t
 
-                def check_phase(state, delta, duration, countdown):
-                    if state == 1:
-                        if delta - duration > 0:
+                def check_phase(state_, delta_, duration, countdown):
+                    if state_ == 1:
+                        if delta_ - duration > 0:
                             self.root.get_response(self.root.scheme + "update_timer", params={"name": timer["name"]})
                             return "countdown"
                         else:
                             return "duration"
                     else:
-                        if delta - countdown > 0:
+                        if delta_ - countdown > 0:
                             self.root.get_response(self.root.scheme + "update_timer", params={"name": timer["name"]})
                             return "duration"
                         else:
                             return "countdown"
 
                 phase = check_phase(statement.state, delta, timer["duration"], timer["countdown"])
-                print(phase)
+                # print(phase)
 
                 if phase == "duration":
                     statement["state"] = 1
@@ -208,7 +217,7 @@ class GG_DataQueue:
                             })
                 value = self.root.serial.queue.execute_command(command)
 
-        # data_io_thread.start()
+        data_io_thread.start()
         tasks_io_thread.start()
         events_thread.start()
         timers_thread.start()
@@ -336,7 +345,7 @@ class GG_Serial:
 
                     if command:
                         uuid_, command_ = command
-                        print(uuid_, command_)
+                        # print(uuid_, command_)
 
                         value = self.root.execute(command_)
                         self.commands_executed.append([uuid_, value])
