@@ -35,9 +35,9 @@ class GG_Client:
         self.data_queue.compile_threads()
 
     def add_data(self, sensor_id, value):
-        request = post(self.scheme + "add_data", data={"sensor_id": sensor_id, "value": value})
+        request = get(self.scheme + "add_data", params={"sensor_id": sensor_id, "value": value})
 
-        return request.json()["ts"]
+        return request.json()
 
     def get(self, _object, **params):
         request = self.get_response(self.scheme + f"get_{_object}", params=params)
