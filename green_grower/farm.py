@@ -16,6 +16,7 @@ from urllib3.exceptions import MaxRetryError, NewConnectionError
 from regex import match
 from time import time, sleep
 from uuid import uuid4 as uuid
+from json.decoder import JSONDecodeError
 
 
 class GG_Client:
@@ -55,7 +56,7 @@ class GG_Client:
             try:
                 value = get(*args, **kwargs)
             except (ConnectionError, ConnectTimeout, ConnectionRefusedError, ConnectionAbortedError, RequestException,
-                    GG_Errors) as e:
+                    GG_Errors, JSONDecodeError) as e:
                 print("Соединение не установлено, повторная попытка через 1 секунду...")
                 print(str(e))
             else:
