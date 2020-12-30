@@ -55,7 +55,12 @@ class GG_Client:
                 print(str(e))
             else:
                 if value.status_code == 200:
-                    return value
+                    try:
+                        value.json()
+                    except JSONDecodeError:
+                        print("Ошибка декодирования, повторная попытка через 1 секунду...")
+                    else:
+                        return value
 
             sleep(1)
 
