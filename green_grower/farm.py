@@ -38,7 +38,7 @@ class GG_Client:
         request = post(self.scheme + "add_data", data={"sensor_id": sensor_id, "value": value})
 
         if request.status_code != 200:
-            raise GG_Errors(f"{request.status_code} -> {request.text}")
+            raise GG_Errors(f"HTTP ERROR -> {request.status_code}")
 
         return request.json()["ts"]
 
@@ -46,7 +46,7 @@ class GG_Client:
         request = self.get_response(self.scheme + f"get_{_object}", params=params)
 
         if request.status_code != 200:
-            raise GG_Errors(f"{request.status_code} -> {request.text}")
+            raise GG_Errors(f"HTTP ERROR -> {request.status_code}")
 
         return request.json()
 
