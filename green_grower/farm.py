@@ -137,7 +137,7 @@ class GG_DataQueue:
                     if action == "add":
                         sensor = self.root.get("sensors", sensor_id=subject)["response"]
                         self.root.sensors.append(
-                            {"name": sensor["name"], "metric": sensor["metric"], "sensor_id": sensor["id"]}
+                            {"name": sensor["name"], "metric": sensor["metric"], "sensor_id": sensor["sensor_id"]}
                         )
 
                     elif action == "remove":
