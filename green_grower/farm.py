@@ -35,14 +35,28 @@ class GG_Client:
         self.data_queue.compile_threads()
 
     def add_data(self, sensor_id, value):
-        request = get(self.scheme + "add_data", params={"sensor_id": sensor_id, "value": value})
+        while True:
+            request = get(self.scheme + "add_data", params={"sensor_id": sensor_id, "value": value})
 
-        return request.json()
+            try:
+                value_ = request.json()
+            except Exception:
+                print("Connection Error...")
+                sleep(1)
+            else:
+                return value_
 
     def get(self, _object, **params):
-        request = self.get_response(self.scheme + f"get_{_object}", params=params)
+        while True:
+            request = self.get_response(self.scheme + f"get_{_object}", params=params)
 
-        return request.json()
+            try:
+                value_ = request.json()
+            except Exception:
+                print("Connection Error...")
+                sleep(1)
+            else:
+                return value_
 
     @staticmethod
     def get_response(*args, **kwargs):
