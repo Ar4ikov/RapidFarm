@@ -181,7 +181,7 @@ void loop()
             Serial.println(fanPower(dt_2));
         }
 
-        else if(data[1] == 'N')
+        else if(data[1] == 'V')
         {
             Serial.println(nasosPower(dt_2));
         }
@@ -237,13 +237,13 @@ void loop()
             Serial.print(fanOn);
             Serial.print("; ");
 
-            Serial.print("N: ");
+            Serial.print("V: ");
             Serial.print(nasosOn);
             Serial.print("; ");
 
             for(int i=0;i<3;i++)
             {
-                Serial.print("V" + String(i+1) + ": ");
+                Serial.print("H" + String(i+1) + ": ");
                 Serial.print(vlPochva(data[i])+"; ");
             }
 
