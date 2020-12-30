@@ -22,4 +22,4 @@ Version | Features | Date
 0.6 (21)| Event XHR-Polling, таймеры, тестирование | Dec 29 2020
 0.8 (22)| Timers Debug, тест на отказоустойчивость | Dec 29 2020
 0.9 (23)| Getter, ReconnectionType Client | Dec 29 2020
-1.0 (29) | Релиз | Dec 30 2020
+1.0 (30) | Релиз | Dec 30 2020
