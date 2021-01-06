@@ -216,33 +216,37 @@ void loop()
             Serial.println(tempData());
         }
 
-        else if(data[1] == 'A')
+//        else if(data[1] == 'A')
+//        {
+//            Serial.print("L: ");
+//            Serial.print(lampOn);
+//            Serial.print("; ");
+//
+//            Serial.print("F: ");
+//            Serial.print(fanOn);
+//            Serial.print("; ");
+//
+//            Serial.print("V: ");
+//            Serial.print(nasosOn);
+//            Serial.print("; ");
+//
+//            for(int i=0;i<3;i++)
+//            {
+//                Serial.print("H" + String(i+1) + ": ");
+//                Serial.print(vlPochva(data[i])+"; ");
+//            }
+//
+//            Serial.print("P: ");
+//            Serial.print(photoData());
+//            Serial.print("; ");
+//
+//            Serial.print("T: ");
+//            Serial.print(tempData());
+//            Serial.println("; ");
+//        }
+        else
         {
-            Serial.print("L: ");
-            Serial.print(lampOn);
-            Serial.print("; ");
-
-            Serial.print("F: ");
-            Serial.print(fanOn);
-            Serial.print("; ");
-
-            Serial.print("V: ");
-            Serial.print(nasosOn);
-            Serial.print("; ");
-
-            for(int i=0;i<3;i++)
-            {
-                Serial.print("H" + String(i+1) + ": ");
-                Serial.print(vlPochva(data[i])+"; ");
-            }
-
-            Serial.print("P: ");
-            Serial.print(photoData());
-            Serial.print("; ");
-
-            Serial.print("T: ");
-            Serial.print(tempData());
-            Serial.println("; ");
+          Serial.println("Error");
         }
     }
 }

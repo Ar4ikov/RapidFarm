@@ -198,12 +198,13 @@ class GG_DataQueue:
                     statement = statement[0]
 
                 current_t = time()
-                ltu_t = self.root.get("timers", name=timer["name"])["response"]["last_time_updated"]
+                ltu_t = timer["last_time_updated"]
                 delta = current_t - ltu_t
 
                 def check_phase(state_, delta_, duration, countdown):
                     if state_ == 1:
                         if delta_ - duration > 0:
+                            timer["last_time_updated"] = time()
                             self.root.get_response(self.root.scheme + "update_timer", params={"name": timer["name"]})
                             return "countdown"
                         else:
@@ -211,6 +212,7 @@ class GG_DataQueue:
                     else:
                         if delta_ - countdown > 0:
                             self.root.get_response(self.root.scheme + "update_timer", params={"name": timer["name"]})
+                            timer["last_time_updated"] = time()
                             return "duration"
                         else:
                             return "countdown"
@@ -248,7 +250,7 @@ class GG_Serial:
         self.on_ready()
 
         self.SERIAL_COMMAND_SCHEME = "{mode}{sensor_id}{value}"
-        self.SERIAL_COMMAND_REGEX = "[I|O|A]\\w{1}\\d{0,}.{1}"
+        self.SERIAL_COMMAND_REGEX = "[I|O]\\w{1}\\d{0,}.{1}"
 
     def on_ready(self):
         value = self.execute("")
