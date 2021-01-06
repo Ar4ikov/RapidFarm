@@ -197,6 +197,7 @@ class GG_DataQueue:
                 else:
                     statement = statement[0]
 
+                current_state = statement.state
                 current_t = time()
                 ltu_t = timer["last_time_updated"]
                 delta = current_t - ltu_t
@@ -229,10 +230,11 @@ class GG_DataQueue:
                 state = timers_thread.database.select_all(
                     "statements", DatabaseObject, where=f"""`name` = '{timer["name"]}'""")[0].state
 
-                command = self.root.serial.parse_command({
-                                "mode": "I", "sensor_id": timer["sensor_id"], "value": state
-                            })
-                value = self.root.serial.queue.execute_command(command)
+                if current_state != state:
+                    command = self.root.serial.parse_command({
+                                    "mode": "I", "sensor_id": timer["sensor_id"], "value": state
+                                })
+                    value = self.root.serial.queue.execute_command(command)
 
         data_io_thread.start()
         tasks_io_thread.start()
