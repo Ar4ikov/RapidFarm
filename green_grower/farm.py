@@ -11,7 +11,6 @@ from serial import Serial
 from serial.tools import list_ports
 from serial.serialutil import SerialTimeoutException, SerialException
 from requests import get, post
-import requests as r
 from requests.exceptions import ConnectTimeout, ConnectionError, RequestException
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from regex import match
@@ -37,7 +36,7 @@ class GG_Client:
 
     def add_data(self, sensor_id, value):
         while True:
-            request = self.get_response(post, self.scheme + "add_data", params={"sensor_id": sensor_id, "value": value})
+            request = get(self.scheme + "add_data", params={"sensor_id": sensor_id, "value": value})
 
             try:
                 value_ = request.json()
@@ -49,7 +48,7 @@ class GG_Client:
 
     def get(self, _object, **params):
         while True:
-            request = self.get_response(get, self.scheme + f"get_{_object}", params=params)
+            request = self.get_response(self.scheme + f"get_{_object}", params=params)
 
             try:
                 value_ = request.json()
@@ -60,10 +59,10 @@ class GG_Client:
                 return value_
 
     @staticmethod
-    def get_response(mode=r.get, *args, **kwargs):
+    def get_response(*args, **kwargs):
         while True:
             try:
-                value = mode(*args, **kwargs)
+                value = get(*args, **kwargs)
             except (ConnectionError, ConnectTimeout, ConnectionRefusedError, ConnectionAbortedError, RequestException,
                     GG_Errors, JSONDecodeError) as e:
                 print("Соединение не установлено, повторная попытка через 1 секунду...")
@@ -127,13 +126,15 @@ class GG_DataQueue:
                 value = self.root.serial.queue.get_executed_command(uuid_)[1]
 
                 end_time = time()
-                response = self.root.get_response(post, self.root.scheme + "/execute_task", data={
+
+                response = post(self.root.scheme + "/execute_task", data={
                     "uuid": uuid_t,
                     "executed_time": abs(float(task["ts"]) - end_time),
                     "response": value
                 })
 
-                print(response.json())
+                if response.status_code == 200:
+                    print(response.json())
 
         @events_thread.add_function("event_poll")
         def get_events():
