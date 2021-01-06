@@ -11,6 +11,7 @@ from serial import Serial
 from serial.tools import list_ports
 from serial.serialutil import SerialTimeoutException, SerialException
 from requests import get, post
+import requests as r
 from requests.exceptions import ConnectTimeout, ConnectionError, RequestException
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from regex import match
@@ -59,7 +60,7 @@ class GG_Client:
                 return value_
 
     @staticmethod
-    def get_response(mode=get, *args, **kwargs):
+    def get_response(mode=r.get, *args, **kwargs):
         while True:
             try:
                 value = mode(*args, **kwargs)
