@@ -337,6 +337,9 @@ class GG_API:
             if "mode" not in data or "sensor_id" not in data:
                 return self.error(400, {"error_message": "Не все параметры были включены", "params": data})
 
+            if data["mode"] not in ["I", "O"]:
+                return self.error(400, {"error_message": "Доступны два режима: (I)nput, (O)utput.", "params": data})
+
             if data["mode"] == "I" and "value" not in data:
                 return self.error(400, {"error_message": "Не указано значение для датчика", "params": data})
 
