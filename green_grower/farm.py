@@ -106,15 +106,18 @@ class GG_DataQueue:
 
             sleep(10)
 
+        tasks_io_thread.ts = time()
+
         @tasks_io_thread.add_function("task_poll")
         def get_tasks():
             time_start = time()
-            request = self.root.get_response(self.root.scheme + "task_poll", params={"ts": time_start, "timeout": 20})
+            request = self.root.get_response(self.root.scheme + "task_poll", params={"ts": tasks_io_thread.ts, "timeout": 20})
 
             if request.status_code != 200:
                 return False
 
             tasks = request.json()
+            tasks_io_thread.ts = tasks["ts"]
 
             for task in tasks["response"]["tasks"]:
                 uuid_t, mode, sensor_id, value = task["uuid"], task["mode"], task["sensor_id"], task["value"]
@@ -136,15 +139,18 @@ class GG_DataQueue:
                 if response.status_code == 200:
                     print(response.json())
 
+        events_thread.ts = time()
+
         @events_thread.add_function("event_poll")
         def get_events():
             time_start = time()
-            request = self.root.get_response(self.root.scheme + "event_poll", params={"ts": time_start, "timeout": 20})
+            request = self.root.get_response(self.root.scheme + "event_poll", params={"ts": events_thread.ts, "timeout": 20})
 
             if request.status_code != 200:
                 return False
 
             events = request.json()
+            events_thread.ts = events["ts"]
 
             for event in events["response"]["events"]:
                 print(event)
