@@ -40,7 +40,7 @@ class GG_Client:
 
             try:
                 value_ = request.json()
-            except Exception:
+            except (ConnectionError, TimeoutError, RequestException, Exception):
                 print("Connection Error...")
                 sleep(1)
             else:
