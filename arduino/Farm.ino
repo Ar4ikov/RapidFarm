@@ -1,7 +1,10 @@
 #include <OneWire.h>
+#include <DallasTemperature.h>
 
 int lamp = 2, fan = 3, nasos = 4;
-OneWire ds(5);
+OneWire oneWire(5);
+DallasTemperature sensors(&oneWire);
+
 char vlazh[3] = {A0, A1, A2}, photo = A3;
 bool lampOn = false, fanOn = false, nasosOn = false;
 unsigned int nasosLast = 0, lampLast = 0;
@@ -9,21 +12,8 @@ int nasosDelayOn = 10, lampDelayOn = 10, nasosDelayOff = 10, lampDelayOff = 10;
 int tempMax = 30;
 String data;
 
-int lampPower(int a) // 1\0 - on\off
+int lampPower(int x) // 1\0 - on\off
 {
-    int x;
-
-    switch(a)
-    {
-      case 1:
-        x = 0;
-        break;
-
-      case 0:
-        x = 1;
-        break;
-    }
-
     if(x != lampOn)
     {
         lampOn = !lampOn;
@@ -61,31 +51,30 @@ int nasosPower(int x) //1\0 - on\off
 
 float tempData()
 {
-    byte temp[2];
-
-    ds.reset();
-    ds.write(0xCC);
-    ds.write(0x44);
-
-    delay(1000);
-
-    ds.write(0xCC);
-    ds.write(0xBE);
-
-    temp[0] = ds.read();
-    temp[1] = ds.read();
-
-    float t =  ((data[1] << 8) | data[0]) * 0.0625;
-
-    return t;
+//    byte temp[2];
+//
+//    ds.reset();
+//    ds.write(0xCC);
+//    ds.write(0x44);
+//
+//    delay(1000);
+//
+//    ds.write(0xCC);
+//    ds.write(0xBE);
+//
+//    temp[0] = ds.read();
+//    temp[1] = ds.read();
+//
+//    float t =  ((data[1] << 8) | data[0]) * 0.0625;
+//
+//    return t;
+   sensors.requestTemperatures();
+   return sensors.getTempCByIndex(0);
 }
 
 int vlPochva(int x) // pin
 {
     int value = analogRead(vlazh[x-1]);
-    value = 1024 - value;
-    value = value * 100 / 1024;
-
     return value;
 }
 

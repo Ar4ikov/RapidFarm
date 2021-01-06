@@ -248,7 +248,7 @@ class GG_Serial:
         self.on_ready()
 
         self.SERIAL_COMMAND_SCHEME = "{mode}{sensor_id}{value}"
-        self.SERIAL_COMMAND_REGEX = "[I|O]\\w{1}\\d{0,}.{1}"
+        self.SERIAL_COMMAND_REGEX = "[I|O|A]\\w{1}\\d{0,}.{1}"
 
     def on_ready(self):
         value = self.execute("")
@@ -300,7 +300,8 @@ class GG_Serial:
         command = self.SERIAL_COMMAND_SCHEME.format(**data_json)
 
         if match(self.SERIAL_COMMAND_REGEX, command) is None:
-            raise GG_Errors(f"The command what we need and regex does not match. -> {command}", 200)
+            # raise GG_Errors(f"The command what we need and regex does not match. -> {command}", 200)
+            pass
 
         return command
 
