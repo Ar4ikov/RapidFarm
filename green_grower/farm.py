@@ -36,7 +36,7 @@ class GG_Client:
 
     def add_data(self, sensor_id, value):
         while True:
-            request = get(self.scheme + "add_data", params={"sensor_id": sensor_id, "value": value})
+            request = self.get_response(post, self.scheme + "add_data", params={"sensor_id": sensor_id, "value": value})
 
             try:
                 value_ = request.json()
@@ -48,7 +48,7 @@ class GG_Client:
 
     def get(self, _object, **params):
         while True:
-            request = self.get_response(self.scheme + f"get_{_object}", params=params)
+            request = self.get_response(get, self.scheme + f"get_{_object}", params=params)
 
             try:
                 value_ = request.json()
@@ -59,10 +59,10 @@ class GG_Client:
                 return value_
 
     @staticmethod
-    def get_response(*args, **kwargs):
+    def get_response(mode=get, *args, **kwargs):
         while True:
             try:
-                value = get(*args, **kwargs)
+                value = mode(*args, **kwargs)
             except (ConnectionError, ConnectTimeout, ConnectionRefusedError, ConnectionAbortedError, RequestException,
                     GG_Errors, JSONDecodeError) as e:
                 print("Соединение не установлено, повторная попытка через 1 секунду...")
@@ -126,7 +126,7 @@ class GG_DataQueue:
                 value = self.root.serial.queue.get_executed_command(uuid_)[1]
 
                 end_time = time()
-                response = post(self.root.scheme + "/execute_task", data={
+                response = self.root.get_response(post, self.root.scheme + "/execute_task", data={
                     "uuid": uuid_t,
                     "executed_time": abs(float(task["ts"]) - end_time),
                     "response": value
