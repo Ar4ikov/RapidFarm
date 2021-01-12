@@ -58,6 +58,13 @@ class GG_Thread(Thread):
         print(self.functions)
         while not self.is_dead:
             for func in self.functions:
-                func["function"](*func["args"], **func["kwargs"])
+                s = False
+                while not s:
+                    try:
+                        func["function"](*func["args"], **func["kwargs"])
+                    except Exception as e:
+                        sleep(1)
+                    else:
+                        break
 
             sleep(0.00001)
